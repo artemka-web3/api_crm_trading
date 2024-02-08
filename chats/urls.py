@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ChatMessageListByChatId, ChatMessageCreate, ChatsList, ChatMessageList, UserCreateView, UserListView, SendTelegramMessageView
+from .views import ChatMessageListByChatId, ChatMessageCreate, ChatsList, ChatMessageList, UserCreateView, UserListView, SendTelegramMessageView, SetCaptchaTrue, GetCaptchaValue
 
 urlpatterns = [
     path('api/messages/', ChatMessageListByChatId.as_view(), name='message-list'),
@@ -9,6 +9,9 @@ urlpatterns = [
     path('api/chats/', ChatsList.as_view(), name='chat-list'),
     path('api/messages/create/', ChatMessageCreate.as_view(), name='message-create'),
     path('api/send-telegram-message/', SendTelegramMessageView.as_view(), name='send_telegram_message'),
+    path('api/set_captcha_true/', SetCaptchaTrue.as_view(), name='set_captcha_true'),
+    path('api/get_captcha_value/', GetCaptchaValue.as_view(), name='get_captcha_value'),
+
 
     # Add more URL patterns as needed
 ]

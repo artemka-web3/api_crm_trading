@@ -3,7 +3,61 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from .models import ChatMessage, User
 from .serializers import ChatMessageSerializer, ChatsSerializer, UserSerializer
+from rest_framework.views import APIView
 import requests
+
+
+class GetCaptchaValue(APIView):
+    def get(self, request, *args, **kwargs):
+        # Получите tg_id из параметра запроса
+        tg_id = request.query_params.get('tg_id')
+
+        if not tg_id:
+            return Response({"error": "tg_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Получите объект пользователя на основе tg_id
+            user = User.objects.get(tg_id=tg_id)
+
+            # Сериализуйте и верните значение поля captcha
+            data = {"tg_id": tg_id, "captcha": user.captcha}
+            return Response(data, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            # Обработайте случай, когда пользователя с указанным tg_id не существует
+            return Response({"error": f"User with tg_id {tg_id} does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            # Обработайте другие исключения при необходимости
+            return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class SetCaptchaTrue(APIView):
+    def post(self, request, *args, **kwargs):
+        # Получите tg_id из данных запроса
+        tg_id = request.data.get('tg_id')
+
+        if not tg_id:
+            return Response({"error": "tg_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Получите объект пользователя на основе tg_id
+            user = User.objects.get(tg_id=tg_id)
+            
+            # Измените значение поля captcha на True
+            user.captcha = True
+            user.save()
+
+            # Сериализуйте и верните обновленного пользователя
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            # Обработайте случай, когда пользователя с указанным tg_id не существует
+            return Response({"error": f"User with tg_id {tg_id} does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            # Обработайте другие исключения при необходимости
+            return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class ChatMessageList(generics.ListCreateAPIView):
     queryset = ChatMessage.objects.all()
