@@ -70,7 +70,7 @@ class SendTelegramMessageView(generics.CreateAPIView):
 # ... (other views)
 
 def send_telegram_message(chat_id, message):
-    bot_token = '6528585494:AAGKnFWegrkgJyiR3OV5GmvYFRMtQ5hTte4'
+    bot_token = '6523327515:AAHGjbhRrv3HiUq-d0cGbp3MAmrMvFJriNM'
     telegram_api_url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
 
     params = {
