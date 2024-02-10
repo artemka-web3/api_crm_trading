@@ -67,7 +67,7 @@ class SetCaptchaTrue(APIView):
 class ResetUnreadMessages(APIView):
     def post(self, request, *args, **kwargs):
         # Get tg_id from the request data
-        tg_id = request.query_params.get('tg_id')
+        tg_id = request.query_params.get('tg_id', None)
 
         if not tg_id:
             return Response({"error": "tg_id is required"}, status=status.HTTP_400_BAD_REQUEST)
