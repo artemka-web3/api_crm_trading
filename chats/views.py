@@ -4,6 +4,11 @@ from rest_framework.response import Response
 from .models import ChatMessage, User
 from .serializers import ChatMessageSerializer, ChatsSerializer, UserSerializer
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view
+from django.db.models.functions import Coalesce
+from django.db.models  import Count
+from django.db.models import IntegerField
+from django.db import models
 import requests
 
 
@@ -57,6 +62,33 @@ class SetCaptchaTrue(APIView):
         except Exception as e:
             # Обработайте другие исключения при необходимости
             return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class ResetUnreadMessages(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get tg_id from the request data
+        tg_id = request.query_params.get('tg_id')
+
+        if not tg_id:
+            return Response({"error": "tg_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Get the user object based on tg_id
+            user = User.objects.get(tg_id=tg_id)
+
+            # Set unread_messages to zero
+            user.chatmessage_set.filter(read=False).update(read=True)
+
+            # Serialize and return the updated user
+            # You may customize the serializer based on your needs
+            # For simplicity, assuming you have a UserSerializer
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({"error": f"User with tg_id {tg_id} does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ChatMessageList(generics.ListCreateAPIView):
@@ -94,9 +126,33 @@ class ChatMessageCreate(generics.CreateAPIView):
     serializer_class = ChatMessageSerializer
 
 
+
 class UserListView(generics.ListAPIView):
-    queryset = User.objects.all()
+
     serializer_class = UserSerializer
+
+    def get_queryset(self):
+        # Получение queryset пользователей с количеством непрочитанных сообщений
+        queryset = User.objects.annotate(unread_messages_count=Coalesce(Count('chatmessage', filter=models.Q(chatmessage__read=False)), 0, output_field=IntegerField()))
+
+        # Фильтрация пользователей по количеству непрочитанных сообщений
+        min_unread_messages = self.request.query_params.get('min_unread_messages', 0)
+        queryset = queryset.filter(unread_messages_count__gte=min_unread_messages)
+
+        # Сортировка пользователей по убыванию непрочитанных сообщений
+        queryset = queryset.order_by('-unread_messages_count')
+
+        return queryset
+
+
+class UnreadMessagesCountView(APIView):
+    def get(self, request, tg_id):
+        try:
+            user = User.objects.get(tg_id=tg_id)
+            unread_messages_count = user.get_unread_messages_count()
+            return Response({'unread_messages_count': unread_messages_count}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class UserCreateView(generics.CreateAPIView):

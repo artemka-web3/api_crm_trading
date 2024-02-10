@@ -18,6 +18,11 @@ class ChatsSerializer(serializers.ModelSerializer):
         return obj.user.tg_id
 
 class UserSerializer(serializers.ModelSerializer):
+    unread_messages_count = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['image', 'username', 'tg_id', 'first_name', 'last_name']
+        fields = ['image', 'username', 'tg_id', 'first_name', 'last_name', 'captcha', 'unread_messages_count']
+
+    def get_unread_messages_count(self, obj):
+        return obj.get_unread_messages_count()
