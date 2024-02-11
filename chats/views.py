@@ -5,12 +5,6 @@ from .models import ChatMessage, User
 from .serializers import ChatMessageSerializer, ChatsSerializer, UserSerializer
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
-from django.db.models.functions import Coalesce
-from django.db.models  import Count
-from django.db.models import IntegerField
-from django.db.models import Max 
-from django.db import models
-from django.db.models import OuterRef, Subquery
 import requests
 
 
@@ -129,20 +123,12 @@ class ChatMessageCreate(generics.CreateAPIView):
 
 
 
-class UserListView(generics.ListAPIView):
-    serializer_class = UserSerializer
+class UserListView(APIView):
+    def get(self, request, format=None):
+        users = User.objects.all().order_by('-chatmessage__message_datetime').distinct()
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def get_queryset(self):
-        # Подзапрос для получения последней даты непрочитанного сообщения для каждого пользователя
-        subquery = ChatMessage.objects.filter(user=OuterRef('pk'), read=False).order_by('-message_datetime').values('message_datetime')[:1]
-
-        # Получение queryset пользователей с количеством непрочитанных сообщений
-        queryset = User.objects.annotate(
-            unread_messages_count=Coalesce(Count('chatmessage', filter=models.Q(chatmessage__read=False)), 0, output_field=IntegerField()),
-            latest_unread_message_date=Subquery(subquery)
-        ).order_by('-latest_unread_message_date')
-
-        return queryset
     
 
 class UnreadMessagesCountView(APIView):
