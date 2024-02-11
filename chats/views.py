@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view
 from django.db.models.functions import Coalesce
 from django.db.models  import Count
 from django.db.models import IntegerField
+from django.db.models import Max 
 from django.db import models
 import requests
 
@@ -135,15 +136,15 @@ class UserListView(generics.ListAPIView):
         # Получение queryset пользователей с количеством непрочитанных сообщений
         queryset = User.objects.annotate(unread_messages_count=Coalesce(Count('chatmessage', filter=models.Q(chatmessage__read=False)), 0, output_field=IntegerField()))
 
-        # Фильтрация пользователей по количеству непрочитанных сообщений
-        min_unread_messages = self.request.query_params.get('min_unread_messages', 0)
-        queryset = queryset.filter(unread_messages_count__gte=min_unread_messages)
+        # Получение queryset пользователей с датой последнего непрочитанного сообщения
+        queryset = User.objects.annotate(
+            latest_unread_message_date=Max('chatmessage__message_datetime', filter=models.Q(chatmessage__read=False))
+        )
 
-        # Сортировка пользователей по убыванию непрочитанных сообщений
-        queryset = queryset.order_by('-unread_messages_count')
+        # Сортировка пользователей по убыванию даты последнего непрочитанного сообщения
+        queryset = queryset.order_by('-latest_unread_message_date')
 
         return queryset
-
 
 class UnreadMessagesCountView(APIView):
     def get(self, request, tg_id):
