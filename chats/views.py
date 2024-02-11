@@ -10,6 +10,7 @@ from django.db.models  import Count
 from django.db.models import IntegerField
 from django.db.models import Max 
 from django.db import models
+from django.db.models import OuterRef, Subquery
 import requests
 
 
