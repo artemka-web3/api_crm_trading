@@ -132,9 +132,13 @@ class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
 
     def get_queryset(self):
+        # Подзапрос для получения последней даты непрочитанного сообщения для каждого пользователя
+        subquery = ChatMessage.objects.filter(user=OuterRef('pk'), read=False).order_by('-message_datetime').values('message_datetime')[:1]
+
+        # Получение queryset пользователей с количеством непрочитанных сообщений
         queryset = User.objects.annotate(
             unread_messages_count=Coalesce(Count('chatmessage', filter=models.Q(chatmessage__read=False)), 0, output_field=IntegerField()),
-            latest_unread_message_date=Max('chatmessage__message_datetime', filter=models.Q(chatmessage__read=False))
+            latest_unread_message_date=Subquery(subquery)
         ).order_by('-latest_unread_message_date')
 
         return queryset
