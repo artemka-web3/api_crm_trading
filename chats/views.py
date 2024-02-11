@@ -131,16 +131,15 @@ class ChatMessageCreate(generics.CreateAPIView):
 class UserListView(generics.ListAPIView):
 
     serializer_class = UserSerializer
-    
+
     def get_queryset(self):
         # Получение queryset пользователей с количеством непрочитанных сообщений
         queryset = User.objects.annotate(
             unread_messages_count=Coalesce(Count('chatmessage', filter=models.Q(chatmessage__read=False)), 0, output_field=IntegerField()),
             latest_unread_message_date=Max('chatmessage__message_datetime', filter=models.Q(chatmessage__read=False))
-        )
+        ).order_by('-latest_unread_message_date')
 
         # Сортировка пользователей по убыванию даты последнего непрочитанного сообщения
-        queryset = queryset.order_by('-latest_unread_message_date')
         return queryset
 
 class UnreadMessagesCountView(APIView):
