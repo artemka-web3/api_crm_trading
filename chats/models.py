@@ -13,7 +13,7 @@ class User(models.Model):
         return self.chatmessage_set.filter(read=False).count()
     
     def get_latest_unread_message_date(self):
-        latest_unread_message = self.chatmessage_set.filter(read=False).latest('message_datetime')
+        latest_unread_message = self.chatmessage_set.filter(read=False).order_by('-message_datetime').first()
         return latest_unread_message.message_datetime if latest_unread_message else None
 
 class ChatMessage(models.Model):
