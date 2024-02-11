@@ -5,7 +5,6 @@ from .models import ChatMessage, User
 from .serializers import ChatMessageSerializer, ChatsSerializer, UserSerializer
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
-from django.db import models
 import requests
 
 
@@ -126,9 +125,7 @@ class ChatMessageCreate(generics.CreateAPIView):
 
 class UserListView(APIView):
     def get(self, request, format=None):
-        users = User.objects.annotate(unread_messages_count=models.Count('chatmessage', filter=models.Q(chatmessage__read=False))) \
-                            .order_by('-chatmessage__message_datetime').distinct()
-
+        users = User.objects.all().order_by('-chatmessage__message_datetime').distinct()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
